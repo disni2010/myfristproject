@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenic Spots</title>
+
+    <style>
+        /* Add some basic styling */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        #user-orders-container {
+            display: flex;
+            flex-wrap: wrap;
+            /* 允许内容换行 */
+            gap: 20px;
+            /* 每个用户之间的间距 */
+        }
+
+        .user-section {
+            min-height: 400px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            width: 320px;
+            /* 固定宽度，方便横向排列 */
+            box-sizing: border-box;
+            /* 确保内边距和边框包含在width中 */
+            position: relative;
+            /* 使绝对定位的按钮相对于该div定位 */
+            padding-bottom: 60px;
+        }
+
+        .user-section h2 {
+            margin-top: 0;
+        }
+
+        .user-section ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .user-section li {
+            border-bottom: 1px solid #ddd;
+            position: relative;
+            /* 使删除按钮相对于该li定位 */
+            padding-top: 3px;
+            padding-bottom: 10px;
+        }
+
+        .user-section li:last-child {
+            border-bottom: none;
+        }
+
+        .delete-btn {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 0px 0px 10px 0px;
+        }
+
+        .delete-btn:hover {
+            background-color: #723131;
+        }
+
+        .add-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: green;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal input {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .del-btn {
+            background-color: red;
+        }
+
+        .del-btn:hover {
+            background-color: #723131;
+        }
+
+        .modal button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal button:hover {
+            background-color: #45a049;
+        }
+
+        .del-btn {
+            background-color: red !important;
+        }
+
+        .del-btn:hover {
+            background-color: #723131 !important;
+        }
+    </style>
+    <script language="javascript" src="../../static/axios-1.x/dist/axios.min.js"></script>
+    <script>
+        let allUsers = [];
+        let currentUserIndex = -1;
+        let currentOrderIndex = -1;
+        let scenicSpotsList = []
+
+        document.addEventListener("DOMContentLoaded", function () {
+            allUsers = JSON.parse(window.localStorage.getItem("allUsers"));
+            scenicSpotsList = JSON.parse(window.localStorage.getItem("scenicspotsList"))
+            console.log(allUsers);
+            console.log(allUsers.userlist);
+            displayUserOrders(allUsers.userlist);
+        });
+
+        function displayUserOrders(users) {
+            const container = document.getElementById('user-orders-container');
+            container.innerHTML = ''; // Clear existing content
+
+            users.forEach((userData, userIndex) => {
+                // Create user section
+                const userSection = document.createElement('div');
+                userSection.className = 'user-section';
+                userSection.innerHTML = `
+                
+                    <h2>用户ID: ${userData.userdata.userid}</h2>
+                    <p>用户名称: ${userData.userdata.username}</p>
+                    <p>密码: ${userData.userdata.userpwd}</p>
+                    <p>电话: ${userData.userdata.phone}</p>
+                    <p>邮箱: ${userData.userdata.email}</p>
+                    <h3>订单:</h3>
+                `;
+                userSection.onclick = function () {
+                    currentUserIndex = userIndex;
+                    showChangeUserPanel(userData.userdata, userIndex)
+                }
+                if (userData.orderslist.orders !== null) {
+                    // 创建Orderlist时要确认是否有值 有可能会有用户但没有订单的情况
+                    const orderList = document.createElement('ul');
+                    userData.orderslist.orders.forEach((order, orderIndex) => {
+                        const orderItem = document.createElement('li');
+                        let htmltext = '';
+                        htmltext += `<p>订单ID: ${order.orderid},票务名称: ${order.orderticketname}, 订单单价: ${order.orderprice},`
+                        scenicSpotsList.scenicspots.forEach((spot, index) => {
+                            if (spot.scenicspotid == order.scenicspotid) {
+                                htmltext += `景点名称: ${spot.scenicspotname},`
+                            }
+                        })
+                        htmltext += `订单数量: ${order.ordernum}, 订单总价: ${(parseInt(order.orderprice) * parseInt(order.ordernum))}
+                        ,订单状态: ${order.orderstatus == 1 ? "未完成" : order.orderstatus == 2 ? "已完成" : order.orderstatus == 3 ? "退款中" : "退款成功"}</p>`;
+
+                        orderItem.innerHTML = htmltext;
+
+                        orderItem.onclick = function (e) {
+                            e.stopPropagation();
+                            currentUserIndex = userIndex;
+                            showChangeOrderPanel(order, orderIndex)
+                        }
+
+                        // 添加按钮在订单列表中
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.className = 'delete-btn';
+                        deleteBtn.onclick = function (e) {
+                            e.stopPropagation();
+                            deleteOrder(userIndex, orderIndex);
+                        };
+
+                        orderItem.appendChild(deleteBtn);
+                        orderList.appendChild(orderItem);
+                    });
+                    userSection.appendChild(orderList);
+
+                }
+                // 添加添加按钮
+                const addBtn = document.createElement('button');
+                addBtn.textContent = 'Add Order';
+                addBtn.className = 'add-btn';
+                addBtn.onclick = function (e) {
+                    e.stopPropagation();
+                    currentUserIndex = userIndex;
+                    showAddOrdersPanel();
+                };
+                userSection.appendChild(addBtn);
+                container.appendChild(userSection);
+            });
+        }
+
+        function showAddOrdersPanel() {
+            const modal = document.getElementById('orderModal');
+            selectSpot = document.getElementById('scenicspotid');
+            selectSpot.options.length = 0;
+            scenicSpotsList.scenicspots.forEach(spot => {
+                const option = document.createElement('option');
+                option.value = spot.scenicspotid;
+                option.textContent = spot.scenicspotname;
+                selectSpot.appendChild(option);
+            })
+            modal.style.display = 'block';
+        }
+
+        function showChangeOrderPanel(order, index) {
+            const modal = document.getElementById('orderModal');
+            modal.style.display = 'block';
+
+            document.getElementById('orderid').value = order.orderid;
+            document.getElementById('orderticketname').value = order.orderticketname;
+            document.getElementById('orderprice').value = order.orderprice;
+            document.getElementById('ordernum').value = order.ordernum;
+
+            selectstatus = document.getElementById('orderstatus');
+            selectstatus.value = order.orderstatus;
+
+            selectSpot = document.getElementById('scenicspotid');
+            selectSpot.options.length = 0;
+            scenicSpotsList.scenicspots.forEach(spot => {
+                const option = document.createElement('option');
+                option.value = spot.scenicspotid;
+                option.textContent = spot.scenicspotname;
+                selectSpot.appendChild(option);
+                if (order.scenicspotid === spot.scenicspotid) {
+                    option.selected = true;
+                }
+            })
+
+
+            modal.setAttribute('data-order-index', index);
+        }
+
+        function showChangeUserPanel(user, index) {
+            const modal = document.getElementById('userModal');
+            modal.style.display = 'block';
+            document.getElementById('userid').innerText = user.userid
+            document.getElementById('username').value = user.username;
+            document.getElementById('userpwd').value = user.userpwd;
+            document.getElementById('phone').value = user.phone;
+            document.getElementById('email').value = user.email;
+            modal.setAttribute('data-user-index', index);
+        }
+
+        function showAddUserPanel() {
+            const modal = document.getElementById('addUserModal');
+            modal.style.display = 'block';
+        }
+
+        function closeAddOrdersPanel() {
+            const modal = document.getElementById('orderModal');
+            document.getElementById('orderid').value = "";
+            document.getElementById('orderticketname').value = "";
+            document.getElementById('orderprice').value = "";
+            document.getElementById('ordernum').value = "";
+            document.getElementById('orderstatus').selectedIndex = -1;
+            document.getElementById('scenicspotid').selectedIndex = -1;
+            modal.removeAttribute('data-order-index');
+            modal.style.display = 'none';
+        }
+
+        function closeChangeUserPanel() {
+            const modal = document.getElementById('userModal');
+            modal.style.display = 'none';
+        }
+
+        function closeAddUserPanel() {
+            const modal = document.getElementById('addUserModal');
+            modal.style.display = 'none';
+        }
+
+        function saveAddOrdersPanel() {
+            const newOrder = {
+                orderid: document.getElementById('orderid').value,
+                orderticketname: document.getElementById('orderticketname').value,
+                orderprice: document.getElementById('orderprice').value,
+                ordernum: document.getElementById('ordernum').value,
+                orderstatus: document.getElementById('orderstatus').value,
+                scenicspotid: document.getElementById('scenicspotid').value,
+                orderuserid: allUsers.userlist[currentUserIndex].userdata.userid
+            };
+            const modal = document.getElementById('orderModal');
+            if (currentUserIndex !== -1 && modal.getAttribute('data-order-index') == null) {
+                if (allUsers.userlist[currentUserIndex].orderslist === null) {
+                    allUsers.userlist[currentUserIndex].orderslist.orders = []
+                }
+                allUsers.userlist[currentUserIndex].orderslist.orders.push(newOrder);
+            } else if (currentUserIndex !== -1 && modal.getAttribute('data-order-index') != null) {
+                allUsers.userlist[currentUserIndex].orderslist.orders[modal.getAttribute('data-order-index')] = newOrder;
+            }
+            window.localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            modal.removeAttribute('data-order-index');
+            currentOrderIndex = -1;
+            var updata = {
+                dataType: "UserList",
+                data: JSON.stringify(allUsers),
+            }
+            //将数据传入后端并进行更改数据库
+            axios.post('/admin/UpData', updata).then(response => {
+                console.log(response.data);
+                if (response.data.code == 200) {
+                    alert("更新成功");
+                } else {
+                    alert(response.data.msg);
+                }
+            })
+            document.getElementById('user-orders-container').innerHTML = '';
+            displayUserOrders(allUsers.userlist);
+            closeAddOrdersPanel();
+        }
+
+        function saveChangeUserPanel() {
+            const modal = document.getElementById('userModal');
+            const index = modal.getAttribute('data-user-index');
+            const user = allUsers.userlist[index].userdata;
+            user.username = document.getElementById('username').value;
+            user.userpwd = document.getElementById('userpwd').value;
+            user.phone = document.getElementById('phone').value;
+            user.email = document.getElementById('email').value;
+            window.localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            var updata = {
+                dataType: "UserList",
+                data: JSON.stringify(allUsers),
+            }
+            modal.removeAttribute('data-user-index');
+            currentUserIndex = -1;
+            //将数据传入后端并进行更改数据库
+            axios.post('/admin/UpData', updata).then(response => {
+                console.log(response.data);
+                if (response.data.code == 200) {
+                    alert("更新成功");
+                } else {
+                    alert(response.data.msg);
+                }
+            })
+            document.getElementById('user-orders-container').innerHTML = '';
+            displayUserOrders(allUsers.userlist);
+            closeChangeUserPanel();
+        }
+
+        function deleteOrder(userIndex, orderIndex) {
+            allUsers.userlist[userIndex].orderslist.orders.splice(orderIndex, 1);
+            window.localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            //将数据传入后端并进行更改数据库
+            var updata = {
+                dataType: "UserList",
+                data: JSON.stringify(allUsers),
+            }
+            axios.post('/admin/UpData', updata).then(response => {
+                console.log(response.data);
+                if (response.data.code == 200) {
+                    alert("更新成功");
+                } else {
+                    alert(response.data.msg);
+                }
+            })
+            displayUserOrders(allUsers.userlist);
+        }
+
+        function deleteUser(userIndex) {
+            const index = document.getElementById('userModal').getAttribute('data-user-index');
+            allUsers.userlist.splice(index, 1);
+            window.localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            var updata = {
+                dataType: "UserList",
+                data: JSON.stringify(allUsers),
+            }
+
+            //将数据传入后端并进行更改数据库
+            axios.post('/admin/UpData', updata).then(response => {
+                if (response.data.code == 200) {
+                    alert("更新成功");
+                } else {
+                    alert(response.data.msg);
+                }
+            })
+            document.getElementById('user-orders-container').innerHTML = '';
+            displayUserOrders(allUsers.userlist);
+            closeChangeUserPanel();
+        }
+    </script>
+
+</head>
+
+<body>
+    <div id="user-orders-container"></div>
+
+    <!-- 被点击列表中的订单后显示订单并且可以进行更改 -->
+    <!-- <div id="changeOrder">
+        <div class="modal-content">
+            <span class="close" onclick="closeChangeOrder()">&times;</span>
+            <h2>Edit Order</h2>
+        </div>
+     </div> -->
+
+    <!-- The Modal 用来显示以及更改orderlist的div -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <!-- &times;显示为乘法符号 -->
+            <span class="close" onclick="closeAddOrdersPanel()">&times;</span>
+            <h2>编辑订单</h2>
+            <!-- <label> 元素的 for 属性用于关联 <label> 和一个特定的表单控件（如 <input>）。当用户点击 <label> 元素时，与之关联的表单控件将获得焦点。 -->
+            <label for="orderid">订单ID:</label>
+            <input type="text" id="orderid" name="orderid">
+            <label for="orderticketname">票务名称:</label>
+            <input type="text" id="orderticketname" name="orderticketname">
+            <label for="orderprice">订单单价:</label>
+            <input type="text" id="orderprice" name="orderprice">
+            <label for="ordernum">订单数量:</label>
+            <input type="text" id="ordernum" name="ordernum">
+            <label for="orderstatus">订单状态:</label>
+            <select name="orderstatus" id="orderstatus">
+                <option value="1">未支付</option>
+                <option value="2">已支付</option>
+                <option value="3">退款中</option>
+                <option value="4">已退款</option>
+            </select>
+            <label for="scenicspotid">景区名称:</label>
+            <select name="scenicspotid" id="scenicspotid"></select>
+            <button onclick="saveAddOrdersPanel()">保存更改</button>
+        </div>
+    </div>
+    <!-- 现在制作的有问题 userpanel里包含orderpanel点击order会先显示userpanel然后在显示orderpanel
+        改进办法就是两个混在一起并在Panel右上角加一个edit进行更改就好了 
+    -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChangeUserPanel()">&times;</span>
+            <h2>编辑用户:</h2>
+            <h3>用户id: <h4 id="userid"></h4>
+            </h3>
+            <label for="username">用户名:</label>
+            <input type="text" id="username" name="username" required></input>
+            <label for="password">密码:</label>
+            <input type="text" id="userpwd" name="password" required></input>
+            <label for="phone">电话号:</label>
+            <input type="tel" name="phone" id="phone" required>
+            <label for="email">邮箱:</label>
+            <input type="email" name="email" id="email" required>
+            <button onclick="saveChangeUserPanel()">保存更改</button>
+            <button class="del-btn" onclick="deleteUser()">删除用户</button>
+        </div>
+    </div>
+
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddUserPanel()">&times;</span>
+            <h2>Add User</h2>
+            <label for="newuserid">User ID:</label>
+            <input type="text" id="newuserid" name="newuserid">
+            <label for="newusername">Username:</label>
+            <input type="text" id="newusername" name="newusername">
+            <label for="newuserpwd">Password:</label>
+            <input type="text" id="newuserpwd" name="newuserpwd">
+            <button onclick="saveAddUserPanel()">Add User</button>
+        </div>
+    </div>
+
+</body>
+
+</html>

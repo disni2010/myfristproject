@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script language="javascript" src="../../static/axios-1.x/dist/axios.min.js"></script>
+    <script>
+        let commentlist = []
+        document.addEventListener("DOMContentLoaded", function () {
+            commentlist = JSON.parse(window.localStorage.getItem("commentsList"))
+            console.log(commentlist);
+            displayComments(commentlist.comments);
+        })
+        function displayComments(comments) {
+            const container = document.getElementById('commentslist');
+            comments.forEach((comment, index) => {
+                const commentSection = document.createElement('div');
+                commentSection.className = 'commentslist-section';
+                commentSection.innerHTML = `
+                    <h2>用户ID: ${comment.userid}</h2>
+                    <p>评论及反馈: ${comment.comment}</p>
+                    <p>评论日期: ${comment.date}</p>
+                    <p>评分: ${comment.rating}</p>
+                `;
+                container.appendChild(commentSection);
+            })
+
+        }
+    </script>
+    <style>
+        /* Add some basic styling */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        #commentslist {
+            display: flex;
+            flex-wrap: wrap;
+            /* 允许内容换行 */
+            gap: 20px;
+            /* 每个用户之间的间距 */
+        }
+
+        .commentslist-section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            width: 300px;
+            /* 固定宽度，方便横向排列 */
+            box-sizing: border-box;
+            /* 确保内边距和边框包含在width中 */
+        }
+
+        .commentslist-section h2 {
+            margin-top: 0;
+        }
+
+        .commentslist-section p {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .commentslist-section p {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .commentslist-section p:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+
+
+<body>
+    <div id="commentslist"></div>
+
+    <div id="commentlist-content">
+        <span></span>
+    </div>
+</body>
+
+</html>

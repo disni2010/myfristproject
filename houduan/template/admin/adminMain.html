@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Main Page</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #adminlist,
+    #commentslist,
+    #tircketslist,
+    #scenicSpotslist,
+    #refundslist {
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .navlist {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      background-color: rgb(78, 78, 78);
+      padding-left: 40px;
+      padding-right: 40px;
+      color: white;
+    }
+
+    .exitbutton {
+      height: 40px;
+      width: 80px;
+      border-radius: 5px;
+      background-color: rgb(112, 112, 112);
+      color: white;
+    }
+
+    .exitbutton:hover {
+      background-color: rgb(177, 177, 177);
+      height: 45px;
+      width: 85px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    .box {
+      margin-left: -3%;
+      width: 300px;
+      height: 100%;
+      display: flex;
+    }
+
+    .ulList {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      background-color: rgb(78, 78, 78);
+      list-style: none;
+    }
+
+    .liList {
+      width: 100%;
+      line-height: 15px;
+      display: flex;
+      flex-direction: column;
+      background-color: rgb(78, 78, 78);
+      position: relative;
+    }
+
+    .liList p {
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .liList p:hover {
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    .liList ul {
+      width: 100%;
+      position: relative;
+      background-color: rgb(112, 112, 112);
+    }
+
+    .liList ul li {
+      width: 100%;
+      height: 35px;
+      line-height: 30px;
+      list-style: none;
+      text-align: center;
+      position: relative;
+    }
+
+    .liList ul li:hover {
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    .showpage {
+      width: 100%;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal-content {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 400px;
+      max-width: 600px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .btn-primary {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .modal-title {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 1.5em;
+    }
+
+    .error-message {
+      color: #f44336;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="navlist">
+    <h2 id="navListPanel">售票系统管理后台页面</h2>
+    <button class="exitbutton" onclick="exitadminMain()">退出</button>
+  </div>
+
+  <div style="height: 100%;display: flex;">
+    <div class="box">
+      　　<ul class="ulList">
+        　　　　<li class="liList">
+          　　　　　　<p onclick="menu_active(ulOne)">票务列表</p>
+          　　　　　　<ul class="childUl" id="ulOne" style="display: none;">
+            　　　　　　　　<li onclick="AddTicket()">添加票务</li>
+            　　　　　　　　<li id="TicketsListPanel">管理票务</li>
+            　　　　　　</ul>
+          　　　　</li>
+        　　　　<li class="liList">
+          　　　　　　<p onclick="menu_active(ulTwo)">景点列表</p>
+          　　　　　　<ul class="childUl" id="ulTwo" style="display: none;">
+            　　　　　　　　<li onclick="AddSence()">添加景点</li>
+            　　　　　　　　<li id="scenicSpotsListPanel">管理景点</li>
+            　　　　 </ul>
+          　 　　 </li>
+        　　　　<li class="liList">
+          　　　　　　<p onclick="menu_active(ulThree)">用户列表</p>
+          　　　　　　<ul class="childUl" id="ulThree" style="display: none;">
+            　　　　　　　　<li onclick="AddUser()">添加用户</li>
+            　　　　　　　　<li id="AllUsersPanel">管理用户</li>
+            　　　　　　</ul>
+          　　　　</li>
+        　　　　<li class="liList">
+          　　　　　　<p onclick="menu_active(ulFour)">评论列表</p>
+          　　　　　　<ul class="childUl" id="ulFour" style="display: none;">
+            　　　　　　　　<li id="commentslistPanel">查看评论</li>
+            　　　　　　</ul>
+        <li class="liList">
+          　　　　　　<p onclick="menu_active(ulFive)">退票列表</p>
+          　　　　　　<ul class="childUl" id="ulFive" style="display: none;">
+            　　　　　　　　<li id="refundslistPanel">管理退票</li>
+            　　　　　　</ul>
+          　　　　</li>
+        　　　　</li>
+
+        　　
+      </ul>
+    </div>
+
+
+    <div class="showpage">
+      <iframe src="/admin/list" id="adminlist">
+        <p>您的浏览器暂不支持该页面</p>
+      </iframe>
+      <iframe src="/admin/commentlist" id="commentslist">
+        <p>您的浏览器暂不支持该页面</p>
+      </iframe>
+      <iframe src="/admin/tircketslist" id="tircketslist">
+        <p>您的浏览器暂不支持该页面</p>
+      </iframe>
+      <iframe src="/admin/scenicSpotlist" id="scenicSpotslist">
+        <p>您的浏览器暂不支持该页面</p>
+      </iframe>
+      <iframe src="/admin/refundlist" id="refundslist">
+        <p>您的浏览器暂不支持该页面</p>
+      </iframe>
+    </div>
+  </div>
+
+
+  <!-- 添加票务弹窗 -->
+  <div id="addTicketModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">添加票务</h2>
+      <form id="addTicketForm">
+        <div class="form-group">
+          <label for="ticketName">票务名称</label>
+          <input type="text" id="ticketName" required>
+          <div class="error-message">请输入票务名称</div>
+        </div>
+        <div class="form-group">
+          <label for="ticketPrice">票务价格</label>
+          <input type="number" id="ticketPrice" required>
+          <div class="error-message">请输入有效的价格</div>
+        </div>
+        <div class="form-group">
+          <label for="ticketNum">票务数量</label>
+          <input type="number" id="ticketNum" required>
+          <div class="error-message">请输入有效的数量</div>
+        </div>
+        <div class="form-group">
+          <label for="startDate">票务开始日期:</label>
+          <input type="date" id="endDate" required>
+        </div>
+        <div class="form-group">
+          <label for="endDate">票务过期日期:</label>
+          <input type="date" id="startDate" required>
+        </div>
+
+        <div class="form-group">
+          <label for="scenicSpotId">所属景点</label>
+          <select id="scenicSpotId" required>
+            <!-- 动态加载景点选项 -->
+          </select>
+          <div class="error-message">请选择所属景点</div>
+        </div>
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addTicketModal')">取消</button>
+          <button type="submit" class="btn btn-primary">确定</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 添加景点弹窗 -->
+  <div id="addScenicModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">添加景点</h2>
+      <form id="addScenicForm">
+        <div class="form-group">
+          <label for="scenicName">景点名称</label>
+          <input type="text" id="scenicName" required>
+          <div class="error-message">请输入景点名称</div>
+        </div>
+        <div class="form-group">
+          <label for="scenicDetails">景点详情</label>
+          <textarea id="scenicDetails" required></textarea>
+          <div class="error-message">请输入景点详情</div>
+        </div>
+        <div class="form-group">
+          <label for="opentime">开馆时间:</label>
+          <input type="time" name="opentime" id="opentime">
+        </div>
+        <div class="form-group">
+          <label for="closetime">闭馆时间:</label>
+          <input type="time" name="closetime" id="closetime">
+        </div>
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addScenicModal')">取消</button>
+          <button type="submit" class="btn btn-primary">确定</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 添加用户弹窗 -->
+  <div id="addUserModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">添加用户</h2>
+      <form id="addUserForm">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" required>
+          <div class="error-message">请输入用户名</div>
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" required>
+          <div class="error-message">请输入密码</div>
+        </div>
+        <div class="form-group">
+          <label for="phone">电话号</label>
+          <input type="tel" name="phone" id="phone" required>
+        </div>
+        <div class="form-group">
+          <label for="email">邮箱</label>
+          <input type="email" name="email" id="email" required>
+        </div>
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">取消</button>
+          <button type="submit" class="btn btn-primary">确定</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script language="javascript" src="../../static/axios-1.x/dist/axios.min.js"></script>
+  <script>
+    let ticketsList = [];
+    let scenicSpotsList = [];
+    let commentsList = [];
+    let allUsers = [];
+    let refundsList = [];
+    //代码需要放在页面后
+    // 当文档加载完成后执行
+    document.addEventListener("DOMContentLoaded", function () {
+      // 从模板变量中获取数据
+      //var: 传统变量声明，具有函数作用域，会被提升。
+      // let: 块作用域，不会被提升，可以重新赋值。
+      // const: 块作用域，不会被提升，不可重新赋值，适合声明常量。
+      ticketsList = JSON.parse("{{ .ticketslist }}");
+      scenicSpotsList = JSON.parse("{{ .scenicspotslist }}");
+      commentsList = JSON.parse("{{ .commentslist }}");
+      allUsers = JSON.parse("{{ .allusers }}");
+      refundsList = JSON.parse("{{ .refundlist }}")  // 注意这里
+
+
+      // 将数据输出到控制台
+      console.log("Tickets List:", ticketsList);
+      console.log("Scenic Spots List:", scenicSpotsList);
+      console.log("Comments List:", commentslist);
+      console.log("All Users:", allUsers);
+      console.log("Refunds List:", refundsList);
+
+      function saveData() {
+        window.localStorage.setItem('ticketsList', JSON.stringify(ticketsList));
+        window.localStorage.setItem('scenicspotsList', JSON.stringify(scenicSpotsList));
+        window.localStorage.setItem('commentsList', JSON.stringify(commentsList));
+        window.localStorage.setItem('allUsers', JSON.stringify(allUsers));
+        window.localStorage.setItem('refundsList', JSON.stringify(refundsList));
+      }
+
+      saveData();
+      // // 调用函数展示数据
+      // displayData();
+
+      const mainpage = document.getElementById("navListPanel");
+      // 获取所有的 展示面板 元素
+      const ticketsListH4 = document.getElementById("TicketsListPanel");
+      const scenicSpotsListH4 = document.getElementById("scenicSpotsListPanel");
+      const commentsListH4 = document.getElementById("commentslistPanel");
+      const allUsersH4 = document.getElementById("AllUsersPanel");
+      const refundsListH4 = document.getElementById("refundslistPanel");
+
+      // 获取所有的 iframe 元素
+      const adminListIframe = document.getElementById('adminlist');
+      const commentsListIframe = document.getElementById('commentslist');
+      const ticketsListIframe = document.getElementById('tircketslist');
+      const scenicSpotsListIframe = document.getElementById('scenicSpotslist');
+      const refundsListIframe = document.getElementById('refundslist');
+
+
+      mainpage.addEventListener('click', function () {
+        adminListIframe.style.display = 'none';
+        commentsListIframe.style.display = 'none';
+        ticketsListIframe.style.display = 'none';
+        scenicSpotsListIframe.style.display = 'none';
+        refundsListIframe.style.display = 'none';
+      });
+      // 为每个 h4 元素绑定点击事件
+      ticketsListH4.addEventListener('click', function () {
+        adminListIframe.style.display = 'none';
+        commentsListIframe.style.display = 'none';
+        ticketsListIframe.style.display = 'block';
+        scenicSpotsListIframe.style.display = 'none';
+        refundsListIframe.style.display = 'none';
+      });
+
+      scenicSpotsListH4.addEventListener('click', function () {
+        adminListIframe.style.display = 'none';
+        commentsListIframe.style.display = 'none';
+        ticketsListIframe.style.display = 'none';
+        scenicSpotsListIframe.style.display = 'block';
+        refundsListIframe.style.display = 'none';
+      });
+
+      commentsListH4.addEventListener('click', function () {
+        adminListIframe.style.display = 'none';
+        commentsListIframe.style.display = 'block';
+        ticketsListIframe.style.display = 'none';
+        scenicSpotsListIframe.style.display = 'none';
+        refundsListIframe.style.display = 'none';
+      });
+
+      allUsersH4.addEventListener('click', function () {
+        adminListIframe.style.display = 'block';
+        commentsListIframe.style.display = 'none';
+        ticketsListIframe.style.display = 'none';
+        scenicSpotsListIframe.style.display = 'none';
+        refundsListIframe.style.display = 'none';
+      });
+      refundsListH4.addEventListener('click', function () {
+        adminListIframe.style.display = 'none';
+        commentsListIframe.style.display = 'none';
+        ticketsListIframe.style.display = 'none';
+        scenicSpotsListIframe.style.display = 'none';
+        refundsListIframe.style.display = 'block';
+      });
+    });
+    function menu_active(ulId) {
+      if (ulId.style.display == "none") {
+        ulId.style.display = "block"
+      } else {
+        ulId.style.display = "none"
+      }
+    }
+
+    // 打开模态框函数
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = 'block';
+    }
+
+    // 关闭模态框函数
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    // 添加票务函数
+    function AddTicket() {
+      // 加载景点数据到select
+      loadScenicSpots();
+      openModal('addTicketModal');
+    }
+
+    // 添加景点函数
+    function AddSence() {
+      openModal('addScenicModal');
+    }
+
+    // 添加用户函数
+    function AddUser() {
+      openModal('addUserModal');
+    }
+
+    // 加载景点数据
+    function loadScenicSpots() {
+      const select = document.getElementById('scenicSpotId');
+      select.innerHTML = ''; // 清空现有选项
+
+      // 这里应该是从后端获取景点数据的ajax请求
+      // 示例数据
+      const scenicSpots = JSON.parse(window.localStorage.getItem('scenicspotsList')).scenicspots
+      scenicSpots.forEach(spot => {
+        const option = document.createElement('option');
+        option.value = spot.scenicspotid;
+        option.textContent = spot.scenicspotname;
+        select.appendChild(option);
+      });
+    }
+
+    // 表单提交处理
+    document.getElementById('addTicketForm').onsubmit = function (e) {
+      e.preventDefault();
+      const ticketData = {
+        ticketname: document.getElementById('ticketName').value,
+        ticketprice: document.getElementById('ticketPrice').value,
+        ticketnum: document.getElementById('ticketNum').value,
+        scenicspotid: document.getElementById('scenicSpotId').value,
+        endDate: document.getElementById('endDate').value,
+        startDate: document.getElementById('startDate').value,
+        ticketrefund: "yes"
+      };
+      console.log('提交票务数据:', ticketData);
+      axios.post('/upload/addtickets', ticketData).then(response => {
+        console.log(response.data);
+        if (response.data.code != 200) {
+          alert(response.data.message);
+        } else { alert('添加成功！'); }
+      });
+      // 这里应该是向后端提交数据的ajax请求
+      console.log('提交票务数据:', ticketData);
+      closeModal('addTicketModal');
+    };
+
+    document.getElementById('addScenicForm').onsubmit = function (e) {
+      e.preventDefault();
+      const scenicData = {
+        scenicspotname: document.getElementById('scenicName').value,
+        scenicspotdetails: document.getElementById('scenicDetails').value,
+        opentime: document.getElementById('opentime').value,
+        closetime: document.getElementById('closetime').value,
+        scenicspotid: (parseInt(scenicSpotsList.scenicspots[(scenicSpotsList.scenicspots.length) - 1].scenicspotid) + 1).toString()
+      };
+      scenicSpotsList.scenicspots.push(scenicData);
+      axios.post('/upload/addscenicspot', scenicSpotsList).then(response => {
+        console.log(response.data);
+        if (response.data.code != 200) {
+          alert(response.data.message);
+        } else { alert('添加成功！'); }
+      });
+      // 这里应该是向后端提交数据的ajax请求
+      console.log('提交景点数据:', scenicData);
+      closeModal('addScenicModal');
+    };
+
+    document.getElementById('addUserForm').onsubmit = function (e) {
+      e.preventDefault();
+      const userData = {
+        username: document.getElementById('username').value,
+        userpwd: document.getElementById('password').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value
+      };
+      // 这里应该是向后端提交数据的ajax请求
+      console.log('提交用户数据:', userData);
+      axios.post('/upload/adduser', userData).then(response => {
+        console.log(response.data);
+        if (response.data.code != 200) {
+          alert(response.data.message);
+        } else { alert('添加成功！'); }
+      });
+      closeModal('addUserModal');
+    };
+  </script>
+</body>
+
+</html>

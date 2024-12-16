@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>退款管理系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .status-1 {
+            background-color: #ffc107;
+            color: white;
+        }
+
+        .status-2 {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-3 {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .status-4 {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        #rejectModal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 500px;
+            border-radius: 8px;
+        }
+
+        #rejectReason {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>退款管理系统</h1>
+        <table id="refundTable">
+            <thead>
+                <tr>
+                    <th>订单ID</th>
+                    <th>退款金额</th>
+                    <th>退款数量</th>
+                    <th>用户ID</th>
+                    <th>票务名称</th>
+                    <th>日期</th>
+                    <th>退款状态</th>
+                    <th>退款原因</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="refundTableBody">
+                <!-- 表格内容将通过 JavaScript 动态生成 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 驳回退款模态框 -->
+    <div id="rejectModal">
+        <div class="modal-content">
+            <h2>驳回退款</h2>
+            <textarea id="rejectReason" rows="4" placeholder="请输入驳回退款的具体原因"></textarea>
+            <div>
+                <button id="confirmReject" class="btn btn-danger">确认驳回</button>
+                <button id="cancelReject" class="btn btn-success">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script language="javascript" src="../../static/axios-1.x/dist/axios.min.js"></script>
+    <script>
+        // 退款数据
+        let refundList = []
+
+        // 退款状态映射
+        const statusMap = {
+            1: '申请退款',
+            2: '退款成功',
+            3: '取消退款',
+            4: '退款驳回'
+        };
+
+        function sortRefundsByStatus(refundsList, ascending = false) {
+            // 创建状态优先级映射
+            const statusPriority = {
+                '1': 0,  // 待处理优先级最高
+                '2': 1,  // 已处理
+                '3': 2,  // 已取消
+                '4': 3   // 已拒绝优先级最低
+            };
+
+            // 深拷贝数据，避免修改原始数据
+            const sortedList = [...refundsList];
+
+            // 排序
+            sortedList.sort((a, b) => {
+                const priorityA = statusPriority[a.refundstatus] || Infinity;
+                const priorityB = statusPriority[b.refundstatus] || Infinity;
+
+                // 根据 ascending 参数决定升序或降序
+                return ascending
+                    ? priorityA - priorityB
+                    : priorityB - priorityA;
+            });
+
+            return sortedList;
+        }
+
+        // 渲染表格
+        function renderTable(refundData) {
+            console.log("退款数据");
+            console.log(refundData);
+            refundData = sortRefundsByStatus(refundData, false);
+            const tableBody = document.getElementById('refundTableBody');
+            tableBody.innerHTML = ''; // 清空现有内容
+
+            refundData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.orderid}</td>
+                    <td>${item.refundprice}</td>
+                    <td>${item.refundnum}</td>
+                    <td>${item.refunduserid}</td>
+                    <td>${item.ticketname}</td>
+                    <td>${item.date}</td>
+                    <td>
+                        <span class="status status-${item.refundstatus}">
+                            ${statusMap[item.refundstatus]}
+                        </span>
+                    </td>
+                    <td>${item.reason}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="handleRefund(${index}, '2')" 
+                                    class="btn btn-success" 
+                                    ${item.refundstatus == 1 ? '' : 'disabled'}>
+                                同意退款
+                            </button>
+                            <button onclick="showRejectModal(${index})" 
+                                    class="btn btn-danger" 
+                                    ${item.refundstatus == 1 ? '' : 'disabled'}>
+                                驳回
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 处理退款
+        function handleRefund(index, newStatus) {
+            const confirmed = confirm(`确定要同意【${refundList.refunds[index].orderid}】的退款申请吗?`);
+            if (confirmed) {
+                refundList.refunds[index].refundstatus = newStatus;
+                //向后台发送数据库更新
+                var updata = {
+                    dataType: "RefundsList",
+                    data: JSON.stringify(refundList)
+                }
+                console.log(updata);
+                axios.post("/admin/UpData", updata).then(Response => {
+                    if (Response.data.code === 200) {
+                        alert("更新成功");
+                    } else {
+                        alert("更新失败," + Response.data.msg);
+                    }
+                })
+                renderTable(refundList.refunds);
+            }
+        }
+
+        // 显示驳回模态框
+        function showRejectModal(index) {
+            const modal = document.getElementById('rejectModal');
+            modal.style.display = 'block';
+
+            // 保存当前正在处理的退款索引
+            window.currentRejectIndex = index;
+        }
+
+        // 确认驳回
+        function confirmReject() {
+            const reasonInput = document.getElementById('rejectReason');
+            const reason = reasonInput.value.trim();
+
+            if (!reason) {
+                alert('请输入驳回原因');
+                return;
+            }
+
+            const index = window.currentRejectIndex;
+            refundList.refunds[index].refundstatus = "4";
+            refundList.refunds[index].note = reason;
+            // 关闭模态框
+            document.getElementById('rejectModal').style.display = 'none';
+
+            //向后台发送数据库更新
+            axios.post("/admin/UpData", updata).then(Response => {
+                if (Response.data.code === 200) {
+                    alert("驳回成功");
+                } else {
+                    alert("驳回失败," + Response.data.msg);
+                }
+            })
+            // 重新渲染表格
+            renderTable(refundList.refunds);
+
+            // 清空输入框
+            reasonInput.value = '';
+
+            alert('已驳回退款申请');
+        }
+
+        // 取消驳回
+        function cancelReject() {
+            document.getElementById('rejectModal').style.display = 'none';
+            document.getElementById('rejectReason').value = '';
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            refundList = JSON.parse(window.localStorage.getItem('refundsList'));
+            renderTable(refundList.refunds);
+            // 绑定模态框按钮事件
+            document.getElementById('confirmReject').addEventListener('click', confirmReject);
+            document.getElementById('cancelReject').addEventListener('click', cancelReject);
+        });
+    </script>
+</body>
+
+</html>

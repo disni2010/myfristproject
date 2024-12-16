@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Management System</title>
+    <script language="javascript" src="../../static/axios-1.x/dist/axios.min.js"></script>
+    <script>
+        let ticketslist = []
+        document.addEventListener("DOMContentLoaded", function () {
+            ticketslist = JSON.parse(window.localStorage.getItem("ticketsList")) || { tickets: [] };
+            console.log(ticketslist.tickets);
+            displayTickets(ticketslist.tickets);
+        });
+
+        function displayTickets(tickets) {
+            const container = document.getElementById('ticketsList')
+            const scenicSpots = JSON.parse(window.localStorage.getItem('scenicspotsList')).scenicspots
+            container.innerHTML = ''; // Clear existing tickets
+            tickets.forEach((ticket, index) => {
+                const ticketSection = document.createElement('div');
+                ticketSection.className = 'ticketsList-section';
+                ticketSection.innerHTML = `
+                    <p>票务名称: ${ticket.ticketname}</p>
+                    <p>票务价格: ${ticket.ticketprice}</p>
+                    <p>票务数量: ${ticket.ticketnum}</p>
+                    <p>开始日期: ${ticket.startDate}</p>
+                    <p>截止日期: ${ticket.endDate}</p>
+                    `;
+                scenicSpots.forEach(scenicSpot => {
+                    if (scenicSpot.scenicspotid === ticket.scenicspotid) {
+                        ticketSection.innerHTML += `<p>景区名称: ${scenicSpot.scenicspotname}</p>`;
+                    }
+                })
+                ticketSection.addEventListener('click', function () {
+                    showModal(ticket, index);
+                });
+
+                container.appendChild(ticketSection);
+            })
+        }
+
+        function showModal(ticket, index) {
+            const modal = document.getElementById('ticketModal');
+            modal.style.display = 'block';
+            const select = document.getElementById('scenicSpotId');
+            document.getElementById('modalTitle').textContent = ticket ? '更改票务' : '添加票务';
+            document.getElementById('ticketname').value = ticket ? ticket.ticketname : '';
+            document.getElementById('ticketprice').value = ticket ? ticket.ticketprice : '';
+            document.getElementById('ticketnum').value = ticket ? ticket.ticketnum : '';
+            document.getElementById('startDate').value = ticket ? ticket.startDate : '';
+            document.getElementById('endDate').value = ticket ? ticket.endDate : '';
+            const scenicSpots = JSON.parse(window.localStorage.getItem('scenicspotsList')).scenicspots
+            select.innerHTML = '';
+            scenicSpots.forEach(spot => {
+                const option = document.createElement('option');
+                option.value = spot.scenicspotid;
+                option.textContent = spot.scenicspotname;
+                select.appendChild(option);
+                if (ticket.scenicspotid === spot.scenicspotid) {
+                    option.selected = true;
+                }
+            })
+
+            modal.setAttribute('data-index', index !== undefined ? index : -1);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('ticketModal');
+            modal.style.display = 'none';
+        }
+
+        function saveChanges() {
+            const modal = document.getElementById('ticketModal');
+            const index = parseInt(modal.getAttribute('data-index'));
+            const newTicket = {
+                ticketname: document.getElementById('ticketname').value,
+                ticketprice: document.getElementById('ticketprice').value,
+                ticketnum: document.getElementById('ticketnum').value,
+                scenicspotid: document.getElementById('scenicSpotId').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
+            };
+
+            if (index === -1) {
+                // 如果没有下标则表示是新的数据
+                ticketslist.tickets.push(newTicket);
+            } else {
+                // 否则是已经有的数据
+                ticketslist.tickets[index] = newTicket;
+            }
+
+            //   保存到本地存储
+            window.localStorage.setItem("ticketsList", JSON.stringify(ticketslist));
+
+            //传送给后端进行跟新数据
+            var updata = {
+                dataType: "TicketsList",
+                data: JSON.stringify(ticketslist),
+            }
+
+            axios.post('/admin/UpData', updata).then(response => {
+                if (response.data.code == 200) {
+                    alert(index === -1 ? "添加成功" : "更新成功");
+                } else {
+                    alert(response.data.msg);
+                }
+            })
+
+            // 刷新数据
+            displayTickets(ticketslist.tickets);
+            // 关闭模态框
+            closeModal();
+        }
+
+        function delChanges() {
+            const r = confirm("确定删除？");
+            if (r == true) {
+                const modal = document.getElementById('ticketModal');
+                const index = parseInt(modal.getAttribute('data-index'));
+                // 从数组中删除指定索引的元素
+                ticketslist.tickets.splice(index, 1);
+                // 更新本地存储
+                window.localStorage.setItem("ticketsList", JSON.stringify(ticketslist));
+                //传送给后端进行跟新数据
+                var updata = {
+                    dataType: "TicketsList",
+                    data: JSON.stringify(ticketslist),
+                }
+
+                axios.post('/admin/UpData', updata).then(response => {
+                    if (response.data.code == 200) {
+                        alert(index === -1 ? "添加成功" : "更新成功");
+                    } else {
+                        alert(response.data.msg);
+                    }
+                })
+
+                // 刷新数据
+                displayTickets(ticketslist.tickets);
+
+                // 关闭模态框
+                closeModal();
+            }
+        }
+
+        function showAddTicketModal() {
+            showModal(null);
+        }
+    </script>
+    <style>
+        /* Add some basic styling */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        #ticketsList {
+            display: flex;
+            flex-wrap: wrap;
+            /* 允许内容换行 */
+            gap: 20px;
+            /* 每个用户之间的间距 */
+        }
+
+        .ticketsList-section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            width: 300px;
+            /* 固定宽度，方便横向排列 */
+            box-sizing: border-box;
+            /* 确保内边距和边框包含在width中 */
+            cursor: pointer;
+            /* Add pointer cursor to indicate clickability */
+        }
+
+        .ticketsList-section h2 {
+            margin-top: 0;
+        }
+
+        .ticketsList-section p {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .ticketsList-section p {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .ticketsList-section p:last-child {
+            border-bottom: none;
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal input {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal button:hover {
+            background-color: #45a049;
+        }
+
+        .modal button:last-child {
+            background-color: #c45454;
+        }
+
+        .modal button:last-child:hover {
+            background-color: #8a3a3a;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ticketsList"></div>
+
+    <!-- The Modal -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">编辑票务</h2>
+            <label for="ticketname">票务名称:</label>
+            <input type="text" id="ticketname" name="ticketname">
+            <label for="ticketprice">票务价格:</label>
+            <input type="text" id="ticketprice" name="ticketprice">
+            <label for="ticketnum">票务数量:</label>
+            <input type="text" id="ticketnum" name="ticketnum">
+            <label for="startDate">开始日期:</label>
+            <input type="date" name="startDate" id="startDate">
+            <label for="endDate">结束日期:</label>
+            <input type="date" name="endDate" id="endDate">
+            <label for="scenicSpotId">所属景点:</label>
+            <select name="scenicSpotId" id="scenicSpotId"></select>
+            <button onclick="saveChanges()">保存更改</button>
+            <button onclick="delChanges()">删除票务</button>
+        </div>
+    </div>
+</body>
+
+</html>
